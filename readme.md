@@ -23,6 +23,7 @@ A modular, feature-rich ESP (Extra Sensory Perception) library for Roblox. Suppo
 
 ```lua
 -- 1. Load the script
+local ESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Muhammad6196/ESP_Library/refs/heads/main/main.lua"))()
 -- 2. Define your logic (see below)
 -- 3. Call ESP:Init()
 ```
