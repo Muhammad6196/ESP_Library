@@ -593,12 +593,11 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
             d.Name.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
             d.Name.Visible = ESP.Settings.Name
         end
-        
+
         if d.NameOutline then
-            local visible = ESP.Settings.Name and ESP.Settings.Outline
-            d.NameOutline.Visible = visible
-            
-            if visible then
+            -- Outline should ONLY be visible if Name is enabled AND Outline is enabled
+            d.NameOutline.Visible = ESP.Settings.Name and ESP.Settings.Outline
+            if d.NameOutline.Visible then
                 d.NameOutline.Text = cname
                 d.NameOutline.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
             end
@@ -609,12 +608,11 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
             d.Distance.Position = Vector2.new(pos.X,pos.Y+size2D.Y/2)
             d.Distance.Visible = ESP.Settings.Distance
         end
-        
-        if d.DistanceOutline then
-            local visible = ESP.Settings.Distance and ESP.Settings.Outline
-            d.DistanceOutline.Visible = visible
 
-            if visible then
+        if d.DistanceOutline then
+            -- Outline should ONLY be visible if Distance is enabled AND Outline is enabled
+            d.DistanceOutline.Visible = ESP.Settings.Distance and ESP.Settings.Outline
+            if d.DistanceOutline.Visible then
                 d.DistanceOutline.Text = math.floor(dist).."m"
                 d.DistanceOutline.Position = Vector2.new(pos.X,pos.Y+size2D.Y/2)
             end
@@ -769,12 +767,14 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
                 d.Name.Color = color
                 d.Name.Visible = ESP.Settings.Name
             end
-            
-            if d.NameOutline and ESP.Settings.Name then
-                d.NameOutline.Text = label
-                d.NameOutline.Position = Vector2.new(pos.X, pos.Y - 10)
-                d.NameOutline.Color = ESP.Settings.OutlineColor
-                d.NameOutline.Visible = ESP.Settings.Outline
+
+            if d.NameOutline then
+                d.NameOutline.Visible = ESP.Settings.Name and ESP.Settings.Outline
+                if d.NameOutline.Visible then
+                    d.NameOutline.Text = label
+                    d.NameOutline.Position = Vector2.new(pos.X, pos.Y - 10)
+                    d.NameOutline.Color = ESP.Settings.OutlineColor
+                end
             end
 
             if d.Distance then
