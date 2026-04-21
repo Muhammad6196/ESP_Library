@@ -506,10 +506,13 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
             continue
         end
 
-        local state, customName = ESP.Logic and ESP.Logic(player)
+        local state, customName
+
+        if ESP.Logic then
+            state, customName = ESP.Logic(player)
+        end
 
         local cham = ESP.Chams[player]
-        print(customName)
         local cname = customName or player.Name
 
         local color
