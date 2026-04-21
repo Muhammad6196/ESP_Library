@@ -305,34 +305,28 @@ function ESP:WatchItems(func)
         if ok and typeof(res) == "table" then 
             items = res 
         end
-        
-        -- Track current items
+
         local currentItems = {}
         for _, it in ipairs(items) do
             currentItems[it] = true
         end
-        
-        -- Add new items
+
         for _, it in ipairs(items) do
             if not self.ItemObjects[it] then
                 self:AddItem(it)
             end
         end
-        
-        -- CRITICAL FIX: Check existing items for state changes
+
         for item, drawings in pairs(self.ItemObjects) do
-            -- If item no longer exists in world
             if not currentItems[item] then
                 self:RemoveItem(item)
             else
-                -- Re-check if item should still be visible
                 local shouldShow = pcall(function()
                     local result = ESP.ItemLogic(item)
                     return result ~= false
                 end)
                 
                 if not shouldShow or not ESP.ItemLogic(item) then
-                    -- Item should be hidden now (like inserted fusebox)
                     self:RemoveItem(item)
                 end
             end
@@ -512,7 +506,7 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
             continue
         end
 
-        local state = ESP.Logic and ESP.Logic(player)
+        local state, customName = ESP.Logic and ESP.Logic(player)
 
         local cham = ESP.Chams[player]
         
@@ -523,22 +517,27 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
         if visible then
             color = ESP.Settings.Teams[state] and ESP.Settings.Teams[state].Color or ESP.Settings.Colors.Default
         end
-
         if color and visible then
-            ESP:CreateCham(player, char, color)
-        end
-        if cham then
-            if not state then
-                cham.Enabled = false
-                cham.FillTransparency = 1
-                cham.OutlineTransparency = 1
+            if not cham then
+                ESP:CreateCham(player, char, color)
+                cham = ESP.Chams[player]
             else
-                
+                cham.Adornee = char
+                cham.FillColor = color
+                cham.OutlineColor = color
                 cham.Enabled = ESP.Settings.Chams
                 cham.FillTransparency = ESP.Settings.ChamFillTransparency
                 cham.OutlineTransparency = ESP.Settings.ChamOutlineTransparency
-                cham.FillColor = color
-                cham.OutlineColor = color
+            end
+        end
+        
+        if cham then
+            if not state or not visible then
+                cham.Enabled = false
+            else
+                cham.Enabled = ESP.Settings.Chams
+                cham.FillTransparency = ESP.Settings.ChamFillTransparency
+                cham.OutlineTransparency = ESP.Settings.ChamOutlineTransparency
             end
         end
         
@@ -588,13 +587,13 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
         end
 
         if d.Name then
-            d.Name.Text = player.Name
+            d.Name.Text = customName or player.Name
             d.Name.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
             d.Name.Visible = ESP.Settings.Name
         end
         
         if d.NameOutline and ESP.Settings.Name then
-            d.NameOutline.Text = player.Name
+            d.NameOutline.Text = customName or player.Name
             d.NameOutline.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
             d.NameOutline.Visible = ESP.Settings.Outline
         elseif d.NameOutline then
