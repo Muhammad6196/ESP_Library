@@ -506,12 +506,13 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
             continue
         end
 
-        local state, customName = ESP.Logic and ESP.Logic(player)
-
+        local state 
+        local customName
+        if ESP.Logic then
+            state, customName = ESP.Logic(player)
+        end
         local cham = ESP.Chams[player]
         
-        local cname = customName or player.Name
-
         local color
 
         local visible = state and true or false
@@ -589,18 +590,17 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
         end
 
         if d.Name then
-            d.Name.Text = cname
+            d.Name.Text = customName or player.Name
             d.Name.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
             d.Name.Visible = ESP.Settings.Name
         end
-
-        if d.NameOutline then
-            -- Outline should ONLY be visible if Name is enabled AND Outline is enabled
-            d.NameOutline.Visible = ESP.Settings.Name and ESP.Settings.Outline
-            if d.NameOutline.Visible then
-                d.NameOutline.Text = cname
-                d.NameOutline.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
-            end
+        
+        if d.NameOutline and ESP.Settings.Name then
+            d.NameOutline.Text = customName or player.Name
+            d.NameOutline.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
+            d.NameOutline.Visible = ESP.Settings.Outline
+        elseif d.NameOutline then
+            d.NameOutline.Visible = false
         end
 
         if d.Distance then
@@ -608,14 +608,13 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
             d.Distance.Position = Vector2.new(pos.X,pos.Y+size2D.Y/2)
             d.Distance.Visible = ESP.Settings.Distance
         end
-
-        if d.DistanceOutline then
-            -- Direct check - no local variable
-            d.DistanceOutline.Visible = ESP.Settings.Distance and ESP.Settings.Outline
-            if d.DistanceOutline.Visible then
-                d.DistanceOutline.Text = math.floor(dist).."m"
-                d.DistanceOutline.Position = Vector2.new(pos.X,pos.Y+size2D.Y/2)
-            end
+        
+        if d.DistanceOutline and ESP.Settings.Distance then
+            d.DistanceOutline.Text = math.floor(dist).."m"
+            d.DistanceOutline.Position = Vector2.new(pos.X,pos.Y+size2D.Y/2)
+            d.DistanceOutline.Visible = ESP.Settings.Outline
+        elseif d.DistanceOutline then
+            d.DistanceOutline.Visible = false
         end
 
         if ESP.Settings.Box3D then
@@ -767,14 +766,12 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
                 d.Name.Color = color
                 d.Name.Visible = ESP.Settings.Name
             end
-
-            if d.NameOutline then
-                d.NameOutline.Visible = ESP.Settings.Name and ESP.Settings.Outline
-                if d.NameOutline.Visible then
-                    d.NameOutline.Text = label
-                    d.NameOutline.Position = Vector2.new(pos.X, pos.Y - 10)
-                    d.NameOutline.Color = ESP.Settings.OutlineColor
-                end
+            
+            if d.NameOutline and ESP.Settings.Name then
+                d.NameOutline.Text = label
+                d.NameOutline.Position = Vector2.new(pos.X, pos.Y - 10)
+                d.NameOutline.Color = ESP.Settings.OutlineColor
+                d.NameOutline.Visible = ESP.Settings.Outline
             end
 
             if d.Distance then
