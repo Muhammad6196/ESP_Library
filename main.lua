@@ -610,7 +610,7 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
         end
 
         if d.DistanceOutline then
-            -- Outline should ONLY be visible if Distance is enabled AND Outline is enabled
+            -- Direct check - no local variable
             d.DistanceOutline.Visible = ESP.Settings.Distance and ESP.Settings.Outline
             if d.DistanceOutline.Visible then
                 d.DistanceOutline.Text = math.floor(dist).."m"
