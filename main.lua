@@ -506,13 +506,10 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
             continue
         end
 
-        local state, customName
-
-        if ESP.Logic then
-            state, customName = ESP.Logic(player)
-        end
+        local state, customName = ESP.Logic and ESP.Logic(player)
 
         local cham = ESP.Chams[player]
+        
         local cname = customName or player.Name
 
         local color
@@ -597,12 +594,14 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
             d.Name.Visible = ESP.Settings.Name
         end
         
-        if d.NameOutline and ESP.Settings.Name then
-            d.NameOutline.Text = cname
-            d.NameOutline.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
-            d.NameOutline.Visible = ESP.Settings.Outline
-        elseif d.NameOutline then
-            d.NameOutline.Visible = false
+        if d.NameOutline then
+            local visible = ESP.Settings.Name and ESP.Settings.Outline
+            d.NameOutline.Visible = visible
+            
+            if visible then
+                d.NameOutline.Text = cname
+                d.NameOutline.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
+            end
         end
 
         if d.Distance then
@@ -611,12 +610,14 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
             d.Distance.Visible = ESP.Settings.Distance
         end
         
-        if d.DistanceOutline and ESP.Settings.Distance then
-            d.DistanceOutline.Text = math.floor(dist).."m"
-            d.DistanceOutline.Position = Vector2.new(pos.X,pos.Y+size2D.Y/2)
-            d.DistanceOutline.Visible = ESP.Settings.Outline
-        elseif d.DistanceOutline then
-            d.DistanceOutline.Visible = false
+        if d.DistanceOutline then
+            local visible = ESP.Settings.Distance and ESP.Settings.Outline
+            d.DistanceOutline.Visible = visible
+
+            if visible then
+                d.DistanceOutline.Text = math.floor(dist).."m"
+                d.DistanceOutline.Position = Vector2.new(pos.X,pos.Y+size2D.Y/2)
+            end
         end
 
         if ESP.Settings.Box3D then
