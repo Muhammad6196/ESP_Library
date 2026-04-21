@@ -510,6 +510,8 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
 
         local cham = ESP.Chams[player]
         
+        local cname = customName or player.Name
+
         local color
 
         local visible = state and true or false
@@ -587,13 +589,13 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
         end
 
         if d.Name then
-            d.Name.Text = customName or player.Name
+            d.Name.Text = cname
             d.Name.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
             d.Name.Visible = ESP.Settings.Name
         end
         
         if d.NameOutline and ESP.Settings.Name then
-            d.NameOutline.Text = customName or player.Name
+            d.NameOutline.Text = cname
             d.NameOutline.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
             d.NameOutline.Visible = ESP.Settings.Outline
         elseif d.NameOutline then
