@@ -11,15 +11,21 @@ end
 _G.ESP_LOADED = ESP
 
 ESP.Settings = {
+    -- Player ESP Settings
     Enabled = false,
     Box2D = false,
     Name = false,
     Distance = false,
     Box3D = false,
     Skeleton = false,
-    ItemESP = false,
     Chams = false,
-    ItemChams = false,
+    
+    -- Item ESP Settings (separate!)
+    ItemESP = false,
+    ItemName = false,      -- Show item names
+    ItemDistance = false,  -- Show item distance
+    ItemChams = false,     -- Highlight items
+    
     ChamFillTransparency = 1,
     ChamOutlineTransparency = 0,
 
@@ -380,7 +386,7 @@ function ESP:CreateItemCham(item)
     self.ItemChams[item] = highlight
 end
 
-function ESP:HideAllDrawings()
+function ESP:HidePlayerDrawings()
     -- Hide all player drawings
     for _, drawings in pairs(self.Objects) do
         if drawings.Box then drawings.Box.Visible = false end
@@ -393,20 +399,8 @@ function ESP:HideAllDrawings()
         for _, line in pairs(drawings.Skeleton) do if line then line.Visible = false end end
     end
     
-    -- Hide all item drawings
-    for _, d in pairs(self.ItemObjects) do
-        if d.Name then d.Name.Visible = false end
-        if d.NameOutline then d.NameOutline.Visible = false end
-        if d.Distance then d.Distance.Visible = false end
-        if d.DistanceOutline then d.DistanceOutline.Visible = false end
-    end
-    
-    -- Disable all chams
+    -- Disable player chams
     for _, cham in pairs(self.Chams) do
-        if cham then cham.Enabled = false end
-    end
-    
-    for _, cham in pairs(self.ItemChams) do
         if cham then cham.Enabled = false end
     end
 end
@@ -523,199 +517,201 @@ local edges = {
 }
 
 ESP.Connection = RunService.RenderStepped:Connect(function()
-    if not ESP.Settings.Enabled then
-        ESP:HideAllDrawings()
-        return
-    end
+    -- Handle Player ESP
+    if ESP.Settings.Enabled then
+        local viewportX = Camera.ViewportSize.X
+        local viewportY = Camera.ViewportSize.Y
 
-    local viewportX = Camera.ViewportSize.X
-    local viewportY = Camera.ViewportSize.Y
+        for player,d in pairs(ESP.Objects) do
+            local char = d.Character
+            local hrp = getRootPart(char)
 
-    for player,d in pairs(ESP.Objects) do
-        local char = d.Character
-        local hrp = getRootPart(char)
-
-        if not char or not hrp or not char.Parent then
-            Hide(d) 
-            continue
-        end
-
-        local state 
-        local customName
-        if ESP.Logic then
-            state, customName = ESP.Logic(player)
-        end
-        local cham = ESP.Chams[player]
-        
-        local color
-
-        local visible = state and true or false
-
-        if visible then
-            color = ESP.Settings.Teams[state] and ESP.Settings.Teams[state].Color or ESP.Settings.Colors.Default
-        end
-        if color and visible then
-            if not cham then
-                ESP:CreateCham(player, char, color)
-                cham = ESP.Chams[player]
-            else
-                cham.Adornee = char
-                cham.FillColor = color
-                cham.OutlineColor = color
-                cham.Enabled = ESP.Settings.Chams
-                cham.FillTransparency = ESP.Settings.ChamFillTransparency
-                cham.OutlineTransparency = ESP.Settings.ChamOutlineTransparency
-            end
-        end
-        
-        if cham then
-            if not state or not visible then
-                cham.Enabled = false
-            else
-                cham.Enabled = ESP.Settings.Chams
-                cham.FillTransparency = ESP.Settings.ChamFillTransparency
-                cham.OutlineTransparency = ESP.Settings.ChamOutlineTransparency
-            end
-        end
-        
-        if not visible then
-            Hide(d)
-            continue
-        end
-        
-        if d.Box then d.Box.Color = color end
-        if d.Name then d.Name.Color = color end
-        if d.Distance then d.Distance.Color = color end
-        
-        if d.BoxOutline then d.BoxOutline.Color = ESP.Settings.OutlineColor end
-        if d.NameOutline then d.NameOutline.Color = ESP.Settings.OutlineColor end
-        if d.DistanceOutline then d.DistanceOutline.Color = ESP.Settings.OutlineColor end
-        
-        for _,l in pairs(d.Box3D) do if l then l.Color = color end end
-        for _,l in pairs(d.Skeleton) do if l then l.Color = color end end
-
-        local pos, isOnScreen = Camera:WorldToViewportPoint(hrp.Position)
-        
-        local onScreen = isOnScreen and pos.X >= 0 and pos.X <= viewportX and pos.Y >= 0 and pos.Y <= viewportY and pos.Z > 0
-        
-        local dist = (Camera.CFrame.Position - hrp.Position).Magnitude
-
-        
-        if not onScreen then 
-            Hide(d) 
-            continue 
-        end
-
-        local scale = 1/(dist/100)
-        local size2D = Vector2.new(35,50)*scale
-
-        if d.Box then
-            d.Box.Size = size2D
-            d.Box.Position = Vector2.new(pos.X-size2D.X/2,pos.Y-size2D.Y/2)
-            d.Box.Visible = ESP.Settings.Box2D
-        end
-        
-        if d.BoxOutline and ESP.Settings.Box2D then
-            d.BoxOutline.Size = size2D
-            d.BoxOutline.Position = Vector2.new(pos.X-size2D.X/2,pos.Y-size2D.Y/2)
-            d.BoxOutline.Visible = ESP.Settings.Outline
-        elseif d.BoxOutline then
-            d.BoxOutline.Visible = false
-        end
-
-        if d.Name then
-            d.Name.Text = customName or player.Name
-            d.Name.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
-            d.Name.Visible = ESP.Settings.Name
-        end
-        
-        if d.NameOutline and ESP.Settings.Name then
-            d.NameOutline.Text = customName or player.Name
-            d.NameOutline.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
-            d.NameOutline.Visible = ESP.Settings.Outline
-        elseif d.NameOutline then
-            d.NameOutline.Visible = false
-        end
-
-        if d.Distance then
-            d.Distance.Text = math.floor(dist).."m"
-            d.Distance.Position = Vector2.new(pos.X,pos.Y+size2D.Y/2)
-            d.Distance.Visible = ESP.Settings.Distance
-        end
-        
-        if d.DistanceOutline and ESP.Settings.Distance then
-            d.DistanceOutline.Text = math.floor(dist).."m"
-            d.DistanceOutline.Position = Vector2.new(pos.X,pos.Y+size2D.Y/2)
-            d.DistanceOutline.Visible = ESP.Settings.Outline
-        elseif d.DistanceOutline then
-            d.DistanceOutline.Visible = false
-        end
-
-        if ESP.Settings.Box3D then
-            local cf,size = char:GetBoundingBox()
-            local corners = {
-                Vector3.new(-size.X,-size.Y,-size.Z),
-                Vector3.new(-size.X,-size.Y,size.Z),
-                Vector3.new(-size.X,size.Y,-size.Z),
-                Vector3.new(-size.X,size.Y,size.Z),
-                Vector3.new(size.X,-size.Y,-size.Z),
-                Vector3.new(size.X,-size.Y,size.Z),
-                Vector3.new(size.X,size.Y,-size.Z),
-                Vector3.new(size.X,size.Y,size.Z),
-            }
-
-            local points={}
-            for i,c in ipairs(corners) do
-                local world = cf:PointToWorldSpace(c/2)
-                local s,v = Camera:WorldToViewportPoint(world)
-                points[i]={s,v}
+            if not char or not hrp or not char.Parent then
+                Hide(d) 
+                continue
             end
 
-            for i,e in ipairs(edges) do
-                local p1,p2 = points[e[1]],points[e[2]]
-                local line = d.Box3D[i]
+            local state 
+            local customName
+            if ESP.Logic then
+                state, customName = ESP.Logic(player)
+            end
+            local cham = ESP.Chams[player]
+            
+            local color
 
-                if line and p1[2] and p2[2] and p1[1].Z > 0 and p2[1].Z > 0 then
-                    line.From = Vector2.new(p1[1].X,p1[1].Y)
-                    line.To = Vector2.new(p2[1].X,p2[1].Y)
-                    line.Visible = true
-                elseif line then
-                    line.Visible = false
+            local visible = state and true or false
+
+            if visible then
+                color = ESP.Settings.Teams[state] and ESP.Settings.Teams[state].Color or ESP.Settings.Colors.Default
+            end
+            if color and visible then
+                if not cham then
+                    ESP:CreateCham(player, char, color)
+                    cham = ESP.Chams[player]
+                else
+                    cham.Adornee = char
+                    cham.FillColor = color
+                    cham.OutlineColor = color
+                    cham.Enabled = ESP.Settings.Chams
+                    cham.FillTransparency = ESP.Settings.ChamFillTransparency
+                    cham.OutlineTransparency = ESP.Settings.ChamOutlineTransparency
                 end
             end
-        else
-            for _,l in pairs(d.Box3D) do if l then l.Visible = false end end
-        end
+            
+            if cham then
+                if not state or not visible then
+                    cham.Enabled = false
+                else
+                    cham.Enabled = ESP.Settings.Chams
+                    cham.FillTransparency = ESP.Settings.ChamFillTransparency
+                    cham.OutlineTransparency = ESP.Settings.ChamOutlineTransparency
+                end
+            end
+            
+            if not visible then
+                Hide(d)
+                continue
+            end
+            
+            if d.Box then d.Box.Color = color end
+            if d.Name then d.Name.Color = color end
+            if d.Distance then d.Distance.Color = color end
+            
+            if d.BoxOutline then d.BoxOutline.Color = ESP.Settings.OutlineColor end
+            if d.NameOutline then d.NameOutline.Color = ESP.Settings.OutlineColor end
+            if d.DistanceOutline then d.DistanceOutline.Color = ESP.Settings.OutlineColor end
+            
+            for _,l in pairs(d.Box3D) do if l then l.Color = color end end
+            for _,l in pairs(d.Skeleton) do if l then l.Color = color end end
 
-        if ESP.Settings.Skeleton then
-            local rig = getRigType(char)
-            local pairsList = rig==Enum.HumanoidRigType.R6 and skeletonPartsR6 or skeletonParts
+            local pos, isOnScreen = Camera:WorldToViewportPoint(hrp.Position)
+            
+            local onScreen = isOnScreen and pos.X >= 0 and pos.X <= viewportX and pos.Y >= 0 and pos.Y <= viewportY and pos.Z > 0
+            
+            local dist = (Camera.CFrame.Position - hrp.Position).Magnitude
 
-            for i,pair in ipairs(pairsList) do
-                local p1 = char:FindFirstChild(pair[1])
-                local p2 = char:FindFirstChild(pair[2])
-                local line = d.Skeleton[i]
+            
+            if not onScreen then 
+                Hide(d) 
+                continue 
+            end
 
-                if line and p1 and p2 then
-                    local a,va = Camera:WorldToViewportPoint(p1.Position)
-                    local b,vb = Camera:WorldToViewportPoint(p2.Position)
+            local scale = 1/(dist/100)
+            local size2D = Vector2.new(35,50)*scale
 
-                    if va and vb and a.Z > 0 and b.Z > 0 then
-                        line.From = Vector2.new(a.X,a.Y)
-                        line.To = Vector2.new(b.X,b.Y)
+            if d.Box then
+                d.Box.Size = size2D
+                d.Box.Position = Vector2.new(pos.X-size2D.X/2,pos.Y-size2D.Y/2)
+                d.Box.Visible = ESP.Settings.Box2D
+            end
+            
+            if d.BoxOutline and ESP.Settings.Box2D then
+                d.BoxOutline.Size = size2D
+                d.BoxOutline.Position = Vector2.new(pos.X-size2D.X/2,pos.Y-size2D.Y/2)
+                d.BoxOutline.Visible = ESP.Settings.Outline
+            elseif d.BoxOutline then
+                d.BoxOutline.Visible = false
+            end
+
+            if d.Name then
+                d.Name.Text = customName or player.Name
+                d.Name.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
+                d.Name.Visible = ESP.Settings.Name
+            end
+            
+            if d.NameOutline and ESP.Settings.Name then
+                d.NameOutline.Text = customName or player.Name
+                d.NameOutline.Position = Vector2.new(pos.X,pos.Y-size2D.Y/2-24)
+                d.NameOutline.Visible = ESP.Settings.Outline
+            elseif d.NameOutline then
+                d.NameOutline.Visible = false
+            end
+
+            if d.Distance then
+                d.Distance.Text = math.floor(dist).."m"
+                d.Distance.Position = Vector2.new(pos.X,pos.Y+size2D.Y/2)
+                d.Distance.Visible = ESP.Settings.Distance
+            end
+            
+            if d.DistanceOutline and ESP.Settings.Distance then
+                d.DistanceOutline.Text = math.floor(dist).."m"
+                d.DistanceOutline.Position = Vector2.new(pos.X,pos.Y+size2D.Y/2)
+                d.DistanceOutline.Visible = ESP.Settings.Outline
+            elseif d.DistanceOutline then
+                d.DistanceOutline.Visible = false
+            end
+
+            if ESP.Settings.Box3D then
+                local cf,size = char:GetBoundingBox()
+                local corners = {
+                    Vector3.new(-size.X,-size.Y,-size.Z),
+                    Vector3.new(-size.X,-size.Y,size.Z),
+                    Vector3.new(-size.X,size.Y,-size.Z),
+                    Vector3.new(-size.X,size.Y,size.Z),
+                    Vector3.new(size.X,-size.Y,-size.Z),
+                    Vector3.new(size.X,-size.Y,size.Z),
+                    Vector3.new(size.X,size.Y,-size.Z),
+                    Vector3.new(size.X,size.Y,size.Z),
+                }
+
+                local points={}
+                for i,c in ipairs(corners) do
+                    local world = cf:PointToWorldSpace(c/2)
+                    local s,v = Camera:WorldToViewportPoint(world)
+                    points[i]={s,v}
+                end
+
+                for i,e in ipairs(edges) do
+                    local p1,p2 = points[e[1]],points[e[2]]
+                    local line = d.Box3D[i]
+
+                    if line and p1[2] and p2[2] and p1[1].Z > 0 and p2[1].Z > 0 then
+                        line.From = Vector2.new(p1[1].X,p1[1].Y)
+                        line.To = Vector2.new(p2[1].X,p2[1].Y)
                         line.Visible = true
-                    else
+                    elseif line then
                         line.Visible = false
                     end
-                elseif line then
-                    line.Visible = false
                 end
+            else
+                for _,l in pairs(d.Box3D) do if l then l.Visible = false end end
             end
-        else
-            for _,l in pairs(d.Skeleton) do if l then l.Visible = false end end
+
+            if ESP.Settings.Skeleton then
+                local rig = getRigType(char)
+                local pairsList = rig==Enum.HumanoidRigType.R6 and skeletonPartsR6 or skeletonParts
+
+                for i,pair in ipairs(pairsList) do
+                    local p1 = char:FindFirstChild(pair[1])
+                    local p2 = char:FindFirstChild(pair[2])
+                    local line = d.Skeleton[i]
+
+                    if line and p1 and p2 then
+                        local a,va = Camera:WorldToViewportPoint(p1.Position)
+                        local b,vb = Camera:WorldToViewportPoint(p2.Position)
+
+                        if va and vb and a.Z > 0 and b.Z > 0 then
+                            line.From = Vector2.new(a.X,a.Y)
+                            line.To = Vector2.new(b.X,b.Y)
+                            line.Visible = true
+                        else
+                            line.Visible = false
+                        end
+                    elseif line then
+                        line.Visible = false
+                    end
+                end
+            else
+                for _,l in pairs(d.Skeleton) do if l then l.Visible = false end end
+            end
         end
+    else
+        -- Player ESP is disabled, hide all player drawings
+        ESP:HidePlayerDrawings()
     end
 
+    -- Handle Item ESP (using separate Item settings)
     for item,d in pairs(ESP.ItemObjects) do
         if not ESP.Settings.ItemESP then
             if d.Name then d.Name.Visible = false end
@@ -762,6 +758,8 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
             continue
         end
         
+        local viewportX = Camera.ViewportSize.X
+        local viewportY = Camera.ViewportSize.Y
         local pos, isOnScreen = Camera:WorldToViewportPoint(pos3D)
         
         local onScreen = isOnScreen and pos.X >= 0 and pos.X <= viewportX and pos.Y >= 0 and pos.Y <= viewportY and pos.Z > 0
@@ -794,32 +792,37 @@ ESP.Connection = RunService.RenderStepped:Connect(function()
                 cham.OutlineColor = color
             end
             
+            -- Use ItemName and ItemDistance settings instead of Name/Distance
             if d.Name then
                 d.Name.Text = label
                 d.Name.Position = Vector2.new(pos.X, pos.Y - 10)
                 d.Name.Color = color
-                d.Name.Visible = ESP.Settings.Name
+                d.Name.Visible = ESP.Settings.ItemName  -- Changed from ESP.Settings.Name
             end
             
-            if d.NameOutline and ESP.Settings.Name then
+            if d.NameOutline and ESP.Settings.ItemName then  -- Changed
                 d.NameOutline.Text = label
                 d.NameOutline.Position = Vector2.new(pos.X, pos.Y - 10)
                 d.NameOutline.Color = ESP.Settings.OutlineColor
                 d.NameOutline.Visible = ESP.Settings.Outline
+            elseif d.NameOutline then
+                d.NameOutline.Visible = false
             end
 
             if d.Distance then
                 d.Distance.Text = math.floor(dist).."m"
                 d.Distance.Position = Vector2.new(pos.X, pos.Y + 5)
                 d.Distance.Color = color
-                d.Distance.Visible = ESP.Settings.Distance
+                d.Distance.Visible = ESP.Settings.ItemDistance  -- Changed from ESP.Settings.Distance
             end
             
-            if d.DistanceOutline and ESP.Settings.Distance then
+            if d.DistanceOutline and ESP.Settings.ItemDistance then  -- Changed
                 d.DistanceOutline.Text = math.floor(dist).."m"
                 d.DistanceOutline.Position = Vector2.new(pos.X, pos.Y + 5)
                 d.DistanceOutline.Color = ESP.Settings.OutlineColor
                 d.DistanceOutline.Visible = ESP.Settings.Outline
+            elseif d.DistanceOutline then
+                d.DistanceOutline.Visible = false
             end
         else
             if d.Name then d.Name.Visible = false end
